@@ -1,50 +1,47 @@
 let socket = null;
 let playerName = "";
 
-// Gestion de l'écran de connexion
-const loginScreen = document.getElementById('login-screen');
-const controller = document.getElementById('controller');
-const pseudoInput = document.getElementById('pseudo-input');
-const btnJoin = document.getElementById('btn-join');
+// --- GESTION DE L'ÉCRAN DE CONNEXION ---
+document.addEventListener('DOMContentLoaded', () => {
+    const loginScreen = document.getElementById('login-screen');
+    const controller = document.getElementById('controller');
+    const pseudoInput = document.getElementById('pseudo-input');
+    const btnJoin = document.getElementById('btn-join');
 
-btnJoin.addEventListener('click', () => {
-    const enteredName = pseudoInput.value.trim();
-    
-    if (enteredName !== "") {
-        playerName = enteredName;
-        
-        // On cache l'écran de connexion et on affiche la manette
-        loginScreen.style.display = 'none';
-        controller.style.display = 'flex';
-        
-        // On demande à passer en plein écran (si le téléphone l'autorise)
-        if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(e => console.log(e));
-        }
-        
-        // On envoie le pseudo à Godot pour qu'il l'affiche dans le Lobby !
-        sendData('join', playerName);
-    } else {
-        alert("Saisis un pseudo pour jouer !");
+    if (btnJoin) {
+        btnJoin.addEventListener('click', () => {
+            const enteredName = pseudoInput.value.trim();
+            
+            if (enteredName !== "") {
+                playerName = enteredName;
+                console.log("Pseudo validé :", playerName);
+                
+                // On cache l'écran de connexion et on affiche la manette
+                loginScreen.style.display = 'none';
+                controller.style.display = 'flex';
+                
+                // On prévient Godot qu'un joueur a rejoint
+                sendData('join', playerName);
+            } else {
+                alert("Saisis un pseudo pour jouer !");
+            }
+        });
     }
 });
 
+// --- CONNEXION WEBSOCKET ---
 async function initRemote() {
-    // On se connecte directement à ton serveur Render en sécurisé (wss://)
     const wsUrl = 'wss://serveur-projet-s4-karting.onrender.com';
     console.log("📡 Tentative WebSocket sur :", wsUrl);
     
     socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-        // Le petit pop-up pour confirmer au joueur sur son téléphone
-        alert("Connecté au circuit !"); 
-        console.log("✅ Connecté");
+        console.log("✅ Connecté au serveur Render");
     };
 
     socket.onclose = (e) => {
         console.log("❌ Fermé", e.code);
-        // Si ça coupe, le téléphone réessaie en boucle toutes les 2 secondes
         setTimeout(initRemote, 2000); 
     };
 
@@ -53,16 +50,21 @@ async function initRemote() {
     };
 }
 
+// --- ENVOI DES DONNÉES (AVEC LE PSEUDO INCLUS !) ---
 function sendData(type, value) {
     if (socket && socket.readyState === WebSocket.OPEN) {
-        const data = JSON.stringify({ type: type, value: value });
+        const data = JSON.stringify({ 
+            joueur: playerName, // Maintenant Godot saura qui conduit !
+            type: type, 
+            value: value 
+        });
         socket.send(data);
     }
 }
 
 initRemote();
 
-// --- VOLANT (TOURS COMPLETS) ---
+// --- VOLANT ---
 const volant = document.getElementById('volant');
 let isDragging = false;
 let accumulatedAngle = 0;
@@ -125,5 +127,9 @@ const setup = (id, type) => {
     b.addEventListener('mousedown', on);
     b.addEventListener('mouseup', off);
 };
-setup('accelerator', 'accelerate');
-setup('brake', 'brake');
+
+// On s'assure que les boutons existent avant d'ajouter les événements
+document.addEventListener('DOMContentLoaded', () => {
+    setup('accelerator', 'accelerate');
+    setup('brake', 'brake');
+});

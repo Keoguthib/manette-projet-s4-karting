@@ -97,23 +97,6 @@ body {
     box-shadow: 0 4px 8px rgba(0,0,0,0.8), inset 0 5px 15px rgba(0,0,0,0.7);
 }
 
-/* --- OVERLAY ROTATION --- */
-@media screen and (orientation: portrait) {
-    body::before {
-        content: "🔄 Pivotez l'écran pour piloter";
-        position: fixed;
-        inset: 0;
-        background: #111;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        font-size: 1.3rem;
-        font-weight: bold;
-        color: white;
-    }
-}
-
 /* --- ÉCRAN DE CONNEXION --- */
 #login-screen {
     display: flex;
