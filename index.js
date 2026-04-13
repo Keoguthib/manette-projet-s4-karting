@@ -1,3 +1,12 @@
+console.log("🚗 VERSION 3 CHARGÉE : Le volant est physiquement bloqué !");
+
+let socket = null;
+let playerName = "";
+// ... la suite de ton code ...
+
+
+
+
 let socket = null;
 let playerName = "";
 
