@@ -1,8 +1,3 @@
-console.log("🚗 VERSION 3 CHARGÉE : Le volant est physiquement bloqué !");
-
-
-
-
 let socket = null;
 let playerName = "";
 
@@ -16,17 +11,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnJoin) {
         btnJoin.addEventListener('click', () => {
             const enteredName = pseudoInput.value.trim();
+            // NOUVEAU : On récupère la valeur du menu déroulant
+            const selectedSkin = document.getElementById('skin-select').value;
             
             if (enteredName !== "") {
                 playerName = enteredName;
-                console.log("Pseudo validé :", playerName);
+                console.log("Pseudo validé :", playerName, "Skin :", selectedSkin);
                 
-                // On cache l'écran de connexion et on affiche la manette
                 loginScreen.style.display = 'none';
                 controller.style.display = 'flex';
                 
-                // On prévient Godot qu'un joueur a rejoint
-                sendData('join', playerName);
+                // NOUVEAU : On envoie le skin dans la case "value" !
+                sendData('join', selectedSkin);
             } else {
                 alert("Saisis un pseudo pour jouer !");
             }
