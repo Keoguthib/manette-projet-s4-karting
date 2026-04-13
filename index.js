@@ -115,10 +115,17 @@ const move = (e) => {
     if (delta < -180) delta += 360;
     
     accumulatedAngle += delta;
+    
+    // --- NOUVEAU : On bloque le volant entre -180 et 180 degrés ---
+    if (accumulatedAngle > 180) accumulatedAngle = 180;
+    if (accumulatedAngle < -180) accumulatedAngle = -180;
+    
     lastAngle = current;
     
     volant.style.transform = `rotate(${accumulatedAngle}deg)`;
-    sendData('steering_axis', Math.max(-1, Math.min(1, accumulatedAngle / 360)));
+    
+    // --- NOUVEAU : On divise par 180 (au lieu de 360) pour envoyer 1 ou -1 à Godot ---
+    sendData('steering_axis', accumulatedAngle / 180);
 };
 
 const stop = (e) => {
