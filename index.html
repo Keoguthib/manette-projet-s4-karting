@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, minimal-ui">
+    <title>Ma Manette Godot</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="controller-container">
+        <div class="left-zone">
+            <div class="steering-wrapper">
+                <img src="assets/Volant_tryhard-removebg-preview.png" id="volant" alt="Volant" draggable="false">
+            </div>
+        </div>
+
+        <div class="right-zone">
+            <div id="brake" class="pedal brake-pedal">FREIN</div>
+            <div id="accelerator" class="pedal gas-pedal">GAZ</div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+    <script src="index.js"></script>
+</body>
+</html>
