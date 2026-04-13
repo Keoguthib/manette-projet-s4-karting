@@ -1,4 +1,33 @@
 let socket = null;
+let playerName = "";
+
+// Gestion de l'écran de connexion
+const loginScreen = document.getElementById('login-screen');
+const controller = document.getElementById('controller');
+const pseudoInput = document.getElementById('pseudo-input');
+const btnJoin = document.getElementById('btn-join');
+
+btnJoin.addEventListener('click', () => {
+    const enteredName = pseudoInput.value.trim();
+    
+    if (enteredName !== "") {
+        playerName = enteredName;
+        
+        // On cache l'écran de connexion et on affiche la manette
+        loginScreen.style.display = 'none';
+        controller.style.display = 'flex';
+        
+        // On demande à passer en plein écran (si le téléphone l'autorise)
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(e => console.log(e));
+        }
+        
+        // On envoie le pseudo à Godot pour qu'il l'affiche dans le Lobby !
+        sendData('join', playerName);
+    } else {
+        alert("Saisis un pseudo pour jouer !");
+    }
+});
 
 async function initRemote() {
     // On se connecte directement à ton serveur Render en sécurisé (wss://)
