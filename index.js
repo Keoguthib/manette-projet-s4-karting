@@ -64,14 +64,14 @@ function sendData(type, value) {
 
 initRemote();
 
-// --- VOLANT ---
+// --- VOLANT (AVEC MULTI-TOUCH) ---
 const volant = document.getElementById('volant');
 let isDragging = false;
 let accumulatedAngle = 0;
 let lastAngle = 0;
+let steeringTouchId = null; // Mémorise QUEL doigt tient le volant
 
-function getAngle(e) {
-    const touch = e.touches ? e.touches[0] : e;
+function getAngle(touch) {
     const rect = volant.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
@@ -79,16 +79,37 @@ function getAngle(e) {
 }
 
 const start = (e) => {
+    if (isDragging) return; // Si on tourne déjà, on ignore
+    e.preventDefault(); 
+    
+    // On repère quel doigt vient de toucher le volant
+    const touch = e.changedTouches ? e.changedTouches[0] : e;
+    steeringTouchId = e.changedTouches ? touch.identifier : 'mouse';
+    
     isDragging = true;
     volant.style.transition = 'none';
-    lastAngle = getAngle(e);
+    lastAngle = getAngle(touch);
 };
 
 const move = (e) => {
     if (!isDragging) return;
-    if (e.cancelable) e.preventDefault();
+    e.preventDefault();
     
-    let current = getAngle(e);
+    let touch = e;
+    // Si c'est sur téléphone, on cherche LE bon doigt parmi tous ceux sur l'écran
+    if (e.changedTouches) {
+        let foundTouch = null;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === steeringTouchId) {
+                foundTouch = e.changedTouches[i];
+                break;
+            }
+        }
+        if (!foundTouch) return; // Le doigt du volant n'a pas bougé
+        touch = foundTouch;
+    }
+    
+    let current = getAngle(touch);
     let delta = current - lastAngle;
     if (delta > 180) delta -= 360;
     if (delta < -180) delta += 360;
@@ -100,35 +121,58 @@ const move = (e) => {
     sendData('steering_axis', Math.max(-1, Math.min(1, accumulatedAngle / 360)));
 };
 
-const stop = () => {
+const stop = (e) => {
     if (!isDragging) return;
+    
+    // On vérifie si c'est bien le doigt du volant qui s'est levé
+    if (e.changedTouches) {
+        let isSteeringFinger = false;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === steeringTouchId) {
+                isSteeringFinger = true;
+                break;
+            }
+        }
+        if (!isSteeringFinger) return; // Un autre doigt (ex: pédale) s'est levé, on annule !
+    }
+    
     isDragging = false;
+    steeringTouchId = null;
     accumulatedAngle = 0;
     volant.style.transition = 'transform 0.4s';
     volant.style.transform = 'rotate(0deg)';
     sendData('steering_axis', 0);
 };
 
-volant.addEventListener('touchstart', start, {passive:false});
-window.addEventListener('touchmove', move, {passive:false});
+volant.addEventListener('touchstart', start, {passive: false});
+window.addEventListener('touchmove', move, {passive: false});
 window.addEventListener('touchend', stop);
 volant.addEventListener('mousedown', start);
 window.addEventListener('mousemove', move);
 window.addEventListener('mouseup', stop);
 
-// --- PÉDALES ---
+// --- PÉDALES (ISOLÉES) ---
 const setup = (id, type) => {
     const b = document.getElementById(id);
     if (!b) return;
-    const on = (e) => { e.preventDefault(); b.classList.add('pressed'); sendData(type, "pressed"); };
-    const off = (e) => { e.preventDefault(); b.classList.remove('pressed'); sendData(type, "released"); };
-    b.addEventListener('touchstart', on, {passive:false});
+    const on = (e) => { 
+        e.preventDefault(); 
+        e.stopPropagation(); // Empêche ce toucher de perturber le volant
+        b.classList.add('pressed'); 
+        sendData(type, "pressed"); 
+    };
+    const off = (e) => { 
+        e.preventDefault(); 
+        e.stopPropagation(); 
+        b.classList.remove('pressed'); 
+        sendData(type, "released"); 
+    };
+    b.addEventListener('touchstart', on, {passive: false});
     b.addEventListener('touchend', off);
     b.addEventListener('mousedown', on);
     b.addEventListener('mouseup', off);
 };
 
-// On s'assure que les boutons existent avant d'ajouter les événements
 document.addEventListener('DOMContentLoaded', () => {
     setup('accelerator', 'accelerate');
     setup('brake', 'brake');
