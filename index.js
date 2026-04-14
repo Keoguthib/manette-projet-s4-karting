@@ -1,3 +1,13 @@
+// ===============================
+// ⚙️ RÉGLAGES DU VOLANT
+// ===============================
+const SETTINGS = {
+    sensitivity: 1.5,   // 1 = normal | >1 = plus doux au centre | <1 = plus direct
+    maxAngle: 120,      // angle max du volant (90 à 180 recommandé)
+    returnSpeed: 0.4    // vitesse de retour au centre (en secondes)
+};
+
+// ===============================
 let socket = null;
 let playerName = "";
 
@@ -12,13 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnJoin.addEventListener('click', () => {
             const enteredName = pseudoInput.value.trim();
             const skinSelect = document.getElementById('skin-select');
-            
-            // On s'assure que le menu déroulant existe avant de lire sa valeur
             const selectedSkin = skinSelect ? skinSelect.value : "Rouge";
             
             if (enteredName !== "") {
                 playerName = enteredName;
-                console.log("Pseudo :", playerName, "| Skin :", selectedSkin);
                 
                 loginScreen.style.display = 'none';
                 controller.style.display = 'flex';
@@ -34,20 +41,18 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- CONNEXION WEBSOCKET ---
 async function initRemote() {
     const wsUrl = 'wss://serveur-projet-s4-karting.onrender.com';
-    console.log("📡 Tentative WebSocket sur :", wsUrl);
     
     socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-        console.log("✅ Connecté au serveur Render");
+        console.log("✅ Connecté au serveur");
     };
 
-    socket.onclose = (e) => {
-        console.log("❌ Fermé", e.code);
+    socket.onclose = () => {
         setTimeout(initRemote, 2000); 
     };
 
-    socket.onerror = (err) => {
+    socket.onerror = () => {
         console.error("❌ Erreur de connexion");
     };
 }
@@ -55,18 +60,19 @@ async function initRemote() {
 // --- ENVOI DES DONNÉES ---
 function sendData(type, value) {
     if (socket && socket.readyState === WebSocket.OPEN) {
-        const data = JSON.stringify({ 
+        socket.send(JSON.stringify({ 
             joueur: playerName,
             type: type, 
             value: value 
-        });
-        socket.send(data);
+        }));
     }
 }
 
 initRemote();
 
-// --- VOLANT (AVEC MULTI-TOUCH) ---
+// ===============================
+// 🎮 VOLANT (AMÉLIORÉ)
+// ===============================
 const volant = document.getElementById('volant');
 let isDragging = false;
 let accumulatedAngle = 0;
@@ -98,52 +104,61 @@ const move = (e) => {
     
     let touch = e;
     if (e.changedTouches) {
-        let foundTouch = null;
+        let found = null;
         for (let i = 0; i < e.changedTouches.length; i++) {
             if (e.changedTouches[i].identifier === steeringTouchId) {
-                foundTouch = e.changedTouches[i];
+                found = e.changedTouches[i];
                 break;
             }
         }
-        if (!foundTouch) return; 
-        touch = foundTouch;
+        if (!found) return;
+        touch = found;
     }
     
     let current = getAngle(touch);
     let delta = current - lastAngle;
+
     if (delta > 180) delta -= 360;
     if (delta < -180) delta += 360;
     
     accumulatedAngle += delta;
-    
-    if (accumulatedAngle > 180) accumulatedAngle = 180;
-    if (accumulatedAngle < -180) accumulatedAngle = -180;
-    
+
+    // ✅ Limitation angle
+    if (accumulatedAngle > SETTINGS.maxAngle) accumulatedAngle = SETTINGS.maxAngle;
+    if (accumulatedAngle < -SETTINGS.maxAngle) accumulatedAngle = -SETTINGS.maxAngle;
+
     lastAngle = current;
-    
+
     volant.style.transform = `rotate(${accumulatedAngle}deg)`;
-    sendData('steering_axis', accumulatedAngle / 180);
+
+    // ✅ Normalisation + courbe de sensibilité
+    let normalized = accumulatedAngle / SETTINGS.maxAngle;
+    normalized = Math.sign(normalized) * Math.pow(Math.abs(normalized), SETTINGS.sensitivity);
+
+    sendData('steering_axis', normalized);
 };
 
 const stop = (e) => {
     if (!isDragging) return;
-    
+
     if (e.changedTouches) {
-        let isSteeringFinger = false;
+        let found = false;
         for (let i = 0; i < e.changedTouches.length; i++) {
             if (e.changedTouches[i].identifier === steeringTouchId) {
-                isSteeringFinger = true;
+                found = true;
                 break;
             }
         }
-        if (!isSteeringFinger) return; 
+        if (!found) return;
     }
-    
+
     isDragging = false;
     steeringTouchId = null;
     accumulatedAngle = 0;
-    volant.style.transition = 'transform 0.4s';
+
+    volant.style.transition = `transform ${SETTINGS.returnSpeed}s`;
     volant.style.transform = 'rotate(0deg)';
+
     sendData('steering_axis', 0);
 };
 
@@ -154,22 +169,27 @@ volant.addEventListener('mousedown', start);
 window.addEventListener('mousemove', move);
 window.addEventListener('mouseup', stop);
 
-// --- PÉDALES (ISOLÉES) ---
+// ===============================
+// 🦶 PÉDALES
+// ===============================
 const setup = (id, type) => {
     const b = document.getElementById(id);
     if (!b) return;
+
     const on = (e) => { 
         e.preventDefault(); 
         e.stopPropagation(); 
         b.classList.add('pressed'); 
         sendData(type, "pressed"); 
     };
+
     const off = (e) => { 
         e.preventDefault(); 
         e.stopPropagation(); 
         b.classList.remove('pressed'); 
         sendData(type, "released"); 
     };
+
     b.addEventListener('touchstart', on, {passive: false});
     b.addEventListener('touchend', off);
     b.addEventListener('mousedown', on);
