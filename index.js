@@ -11,9 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnJoin) {
         btnJoin.addEventListener('click', () => {
             const enteredName = pseudoInput.value.trim();
+            const skinSelect = document.getElementById('skin-select');
             
-            // On récupère la couleur choisie dans le menu
-            const selectedSkin = document.getElementById('skin-select').value;
+            // On s'assure que le menu déroulant existe avant de lire sa valeur
+            const selectedSkin = skinSelect ? skinSelect.value : "Rouge";
             
             if (enteredName !== "") {
                 playerName = enteredName;
@@ -22,8 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 loginScreen.style.display = 'none';
                 controller.style.display = 'flex';
                 
-                // Le téléphone va envoyer ce JSON à Godot :
-                // {"joueur": "TonPseudo", "type": "join", "value": "rouge"}
                 sendData('join', selectedSkin); 
             } else {
                 alert("Saisis un pseudo pour jouer !");
@@ -53,11 +52,11 @@ async function initRemote() {
     };
 }
 
-// --- ENVOI DES DONNÉES (AVEC LE PSEUDO INCLUS !) ---
+// --- ENVOI DES DONNÉES ---
 function sendData(type, value) {
     if (socket && socket.readyState === WebSocket.OPEN) {
         const data = JSON.stringify({ 
-            joueur: playerName, // Maintenant Godot saura qui conduit !
+            joueur: playerName,
             type: type, 
             value: value 
         });
@@ -72,7 +71,7 @@ const volant = document.getElementById('volant');
 let isDragging = false;
 let accumulatedAngle = 0;
 let lastAngle = 0;
-let steeringTouchId = null; // Mémorise QUEL doigt tient le volant
+let steeringTouchId = null; 
 
 function getAngle(touch) {
     const rect = volant.getBoundingClientRect();
@@ -82,10 +81,9 @@ function getAngle(touch) {
 }
 
 const start = (e) => {
-    if (isDragging) return; // Si on tourne déjà, on ignore
+    if (isDragging) return; 
     e.preventDefault(); 
     
-    // On repère quel doigt vient de toucher le volant
     const touch = e.changedTouches ? e.changedTouches[0] : e;
     steeringTouchId = e.changedTouches ? touch.identifier : 'mouse';
     
@@ -99,7 +97,6 @@ const move = (e) => {
     e.preventDefault();
     
     let touch = e;
-    // Si c'est sur téléphone, on cherche LE bon doigt parmi tous ceux sur l'écran
     if (e.changedTouches) {
         let foundTouch = null;
         for (let i = 0; i < e.changedTouches.length; i++) {
@@ -108,7 +105,7 @@ const move = (e) => {
                 break;
             }
         }
-        if (!foundTouch) return; // Le doigt du volant n'a pas bougé
+        if (!foundTouch) return; 
         touch = foundTouch;
     }
     
@@ -119,22 +116,18 @@ const move = (e) => {
     
     accumulatedAngle += delta;
     
-    // --- NOUVEAU : On bloque le volant entre -180 et 180 degrés ---
     if (accumulatedAngle > 180) accumulatedAngle = 180;
     if (accumulatedAngle < -180) accumulatedAngle = -180;
     
     lastAngle = current;
     
     volant.style.transform = `rotate(${accumulatedAngle}deg)`;
-    
-    // --- NOUVEAU : On divise par 180 (au lieu de 360) pour envoyer 1 ou -1 à Godot ---
     sendData('steering_axis', accumulatedAngle / 180);
 };
 
 const stop = (e) => {
     if (!isDragging) return;
     
-    // On vérifie si c'est bien le doigt du volant qui s'est levé
     if (e.changedTouches) {
         let isSteeringFinger = false;
         for (let i = 0; i < e.changedTouches.length; i++) {
@@ -143,7 +136,7 @@ const stop = (e) => {
                 break;
             }
         }
-        if (!isSteeringFinger) return; // Un autre doigt (ex: pédale) s'est levé, on annule !
+        if (!isSteeringFinger) return; 
     }
     
     isDragging = false;
@@ -167,7 +160,7 @@ const setup = (id, type) => {
     if (!b) return;
     const on = (e) => { 
         e.preventDefault(); 
-        e.stopPropagation(); // Empêche ce toucher de perturber le volant
+        e.stopPropagation(); 
         b.classList.add('pressed'); 
         sendData(type, "pressed"); 
     };
