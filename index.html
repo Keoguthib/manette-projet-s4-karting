@@ -2,8 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, minimal-ui">
-    <title>Ma Manette Godot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Manette Kart - Joystick</title>
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <h1>Course de Karts</h1>
         <input type="text" id="pseudo-input" placeholder="Ton pseudo..." maxlength="12">
         
-        <select id="skin-select" style="margin-bottom: 15px; padding: 10px; font-size: 16px;">
+        <select id="skin-select">
             <option value="Rouge">Voiture Rouge</option>
             <option value="Bleu">Voiture Bleue</option>
             <option value="BleuTurquoise">Voiture Bleu Turquoise</option>
@@ -22,7 +22,6 @@
             <option value="Orange">Voiture Orange</option>
             <option value="Blanche">Voiture Blanche</option>
             <option value="NoirEtBlanche">Voiture Noire et Blanche</option>
-            
             <option value="camion">Camion</option>
         </select>
         
@@ -31,8 +30,10 @@
 
     <div class="controller-container" id="controller" style="display: none;">
         <div class="left-zone">
-            <div class="steering-wrapper">
-                <img src="assets/Volant_tryhard-removebg-preview.png" id="volant" alt="Volant" draggable="false">
+            <div id="joystick-container">
+                <div id="joystick-base">
+                    <div id="joystick-stick"></div>
+                </div>
             </div>
         </div>
 
@@ -42,7 +43,6 @@
         </div>
     </div>
     
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
     <script src="index.js"></script>
-</body></html>
+</body>
+</html>
