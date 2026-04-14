@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnJoin = document.getElementById('btn-join');
 
     if (btnJoin) {
-        if (btnJoin) {
         btnJoin.addEventListener('click', () => {
             const enteredName = pseudoInput.value.trim();
             
