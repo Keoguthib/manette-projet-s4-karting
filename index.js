@@ -47,50 +47,101 @@ function sendData(type, value) {
 function initJoystick() {
     const base = document.getElementById('joystick-base');
     const stick = document.getElementById('joystick-stick');
-    let isMoving = false;
+
+    let activeTouchId = null;
+
+    const getTouchById = (touches, id) => {
+        for (let t of touches) {
+            if (t.identifier === id) return t;
+        }
+        return null;
+    };
 
     const moveJoystick = (e) => {
-        if (!isMoving) return;
-        const touch = e.touches ? e.touches[0] : e;
+        if (activeTouchId === null) return;
+
+        const touch = getTouchById(e.touches, activeTouchId);
+        if (!touch) return;
+
         const rect = base.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
-        
-        // Calcul du décalage X uniquement (pour la direction)
+
         let deltaX = touch.clientX - centerX;
-        
-        // Limitation au rayon max
+
         deltaX = Math.max(-SETTINGS.maxDistance, Math.min(SETTINGS.maxDistance, deltaX));
 
-        // Animation visuelle
         stick.style.transform = `translate(calc(-50% + ${deltaX}px), -50%)`;
 
-        // Normalisation (-1 à 1) + sensibilité
         let normalized = deltaX / SETTINGS.maxDistance;
         let finalValue = Math.sign(normalized) * Math.pow(Math.abs(normalized), SETTINGS.sensitivity);
-        
+
         sendData('steering_axis', finalValue);
     };
 
-    const stopJoystick = () => {
-        isMoving = false;
+    const stopJoystick = (e) => {
+        const touch = [...e.changedTouches].find(t => t.identifier === activeTouchId);
+        if (!touch) return;
+
+        activeTouchId = null;
+
         stick.style.transition = '0.2s ease-out';
         stick.style.transform = `translate(-50%, -50%)`;
         sendData('steering_axis', 0);
     };
 
     const startJoystick = (e) => {
-        isMoving = true;
-        stick.style.transition = 'none';
-        moveJoystick(e);
+        const touch = e.changedTouches[0];
+
+        // IMPORTANT : ne prendre que si le touch commence dans le joystick
+        const rect = base.getBoundingClientRect();
+        if (
+            touch.clientX >= rect.left &&
+            touch.clientX <= rect.right &&
+            touch.clientY >= rect.top &&
+            touch.clientY <= rect.bottom
+        ) {
+            activeTouchId = touch.identifier;
+            stick.style.transition = 'none';
+            moveJoystick(e);
+        }
     };
 
-    base.addEventListener('touchstart', startJoystick, {passive: false});
-    window.addEventListener('touchmove', moveJoystick, {passive: false});
+    base.addEventListener('touchstart', startJoystick, { passive: false });
+    window.addEventListener('touchmove', moveJoystick, { passive: false });
     window.addEventListener('touchend', stopJoystick);
-    
-    base.addEventListener('mousedown', startJoystick);
-    window.addEventListener('mousemove', moveJoystick);
-    window.addEventListener('mouseup', stopJoystick);
+
+    // souris (inchangé)
+    let isMouseDown = false;
+
+    base.addEventListener('mousedown', (e) => {
+        isMouseDown = true;
+        stick.style.transition = 'none';
+        moveJoystick(e);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isMouseDown) return;
+
+        const rect = base.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+
+        let deltaX = e.clientX - centerX;
+        deltaX = Math.max(-SETTINGS.maxDistance, Math.min(SETTINGS.maxDistance, deltaX));
+
+        stick.style.transform = `translate(calc(-50% + ${deltaX}px), -50%)`;
+
+        let normalized = deltaX / SETTINGS.maxDistance;
+        let finalValue = Math.sign(normalized) * Math.pow(Math.abs(normalized), SETTINGS.sensitivity);
+
+        sendData('steering_axis', finalValue);
+    });
+
+    window.addEventListener('mouseup', () => {
+        isMouseDown = false;
+        stick.style.transition = '0.2s ease-out';
+        stick.style.transform = `translate(-50%, -50%)`;
+        sendData('steering_axis', 0);
+    });
 }
 
 // --- 🦶 PÉDALES ---
