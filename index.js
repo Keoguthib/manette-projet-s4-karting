@@ -9,20 +9,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnJoin = document.getElementById('btn-join');
 
     if (btnJoin) {
+        if (btnJoin) {
         btnJoin.addEventListener('click', () => {
             const enteredName = pseudoInput.value.trim();
-            // NOUVEAU : On récupère la valeur du menu déroulant
+            
+            // On récupère la couleur choisie dans le menu
             const selectedSkin = document.getElementById('skin-select').value;
             
             if (enteredName !== "") {
                 playerName = enteredName;
-                console.log("Pseudo validé :", playerName, "Skin :", selectedSkin);
+                console.log("Pseudo :", playerName, "| Skin :", selectedSkin);
                 
                 loginScreen.style.display = 'none';
                 controller.style.display = 'flex';
                 
-                // NOUVEAU : On envoie le skin dans la case "value" !
-                sendData('join', selectedSkin);
+                // Le téléphone va envoyer ce JSON à Godot :
+                // {"joueur": "TonPseudo", "type": "join", "value": "rouge"}
+                sendData('join', selectedSkin); 
             } else {
                 alert("Saisis un pseudo pour jouer !");
             }
